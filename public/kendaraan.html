@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Manajemen Kendaraan</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+  h2 { color: #333; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  th { background: #4CAF50; color: white; }
+  tr:nth-child(even) { background: #f9f9f9; }
+  input, select { padding: 6px; margin: 4px 0; width: 100%; box-sizing: border-box; }
+  button { padding: 8px 16px; margin: 4px; cursor: pointer; border: none; border-radius: 4px; }
+  .btn-simpan { background: #4CAF50; color: white; }
+  .btn-edit { background: #2196F3; color: white; }
+  .btn-hapus { background: #f44336; color: white; }
+  .btn-reset { background: #9E9E9E; color: white; }
+  #pesan { padding: 10px; margin: 10px 0; border-radius: 4px; display: none; }
+  .sukses { background: #dff0d8; color: #3c763d; }
+  .gagal { background: #f2dede; color: #a94442; }
+  fieldset { margin-bottom: 20px; padding: 16px; border: 1px solid #ccc; border-radius: 6px; }
+</style>
+</head>
+<body>
+<h2>Manajemen Kendaraan</h2>
+<div id="pesan"></div>
+<fieldset>
+  <legend><b>Form Kendaraan</b></legend>
+  <input type="hidden" id="id">
+  <label>No. Polisi</label>
+  <input type="text" id="nopol" placeholder="Contoh: BG 1234 AB">
+  <label>Merk</label>
+  <input type="text" id="merk" placeholder="Contoh: Toyota">
+  <label>Tipe</label>
+  <input type="text" id="tipe" placeholder="Contoh: Avanza">
+  <label>Tahun</label>
+  <input type="number" id="tahun" placeholder="Contoh: 2020">
+  <label>Status</label>
+  <select id="status">
+    <option value="Aktif">Aktif</option>
+    <option value="Tidak Aktif">Tidak Aktif</option>
+    <option value="Dalam Perbaikan">Dalam Perbaikan</option>
+  </select>
+  <br><br>
+  <button class="btn-simpan" onclick="simpan()">Simpan</button>
+  <button class="btn-reset" onclick="reset()">Reset</button>
+</fieldset>
+<h3>Data Kendaraan</h3>
+<table>
+  <thead>
+    <tr><th>No</th><th>No. Polisi</th><th>Merk</th><th>Tipe</th><th>Tahun</th><th>Status</th><th>Aksi</th></tr>
+  </thead>
+  <tbody id="tabel"></tbody>
+</table>
+<script>
+var API = 'http://127.0.0.1:8000/api/kendaraan';
+function tampilPesan(msg, tipe) {
+  $('#pesan').removeClass('sukses gagal').addClass(tipe).text(msg).show();
+  setTimeout(function(){ $('#pesan').hide(); }, 3000);
+}
+function loadData() {
+  $.ajax({ url: API, type: 'GET', success: function(data) {
+    var html = '';
+    $.each(data, function(i, k) {
+      html += '<tr><td>'+(i+1)+'</td><td>'+k.nopol+'</td><td>'+k.merk+'</td><td>'+k.tipe+'</td><td>'+k.tahun+'</td><td>'+k.status+'</td>';
+      html += '<td><button class="btn-edit" onclick="edit('+k.id+')">Edit</button> <button class="btn-hapus" onclick="hapus('+k.id+')">Hapus</button></td></tr>';
+    });
+    $('#tabel').html(html);
+  }});
+}
+function simpan() {
+  var id = $('#id').val();
+  var data = { nopol: $('#nopol').val(), merk: $('#merk').val(), tipe: $('#tipe').val(), tahun: $('#tahun').val(), status: $('#status').val() };
+  $.ajax({ url: id ? API+'/'+id : API, type: id ? 'PUT' : 'POST', contentType: 'application/json', data: JSON.stringify(data),
+    success: function() { tampilPesan('Data berhasil disimpan!', 'sukses'); reset(); loadData(); },
+    error: function(xhr) { var e = xhr.responseJSON; tampilPesan(e && e.message ? e.message : 'Gagal!', 'gagal'); }
+  });
+}
+function edit(id) {
+  $.ajax({ url: API+'/'+id, type: 'GET', success: function(k) {
+    $('#id').val(k.id); $('#nopol').val(k.nopol); $('#merk').val(k.merk);
+    $('#tipe').val(k.tipe); $('#tahun').val(k.tahun); $('#status').val(k.status);
+  }});
+}
+function hapus(id) {
+  if (!confirm('Yakin hapus?')) return;
+  $.ajax({ url: API+'/'+id, type: 'DELETE', success: function() { tampilPesan('Data berhasil dihapus!', 'sukses'); loadData(); }});
+}
+function reset() {
+  $('#id,#nopol,#merk,#tipe,#tahun').val(''); $('#status').val('Aktif');
+}
+$(document).ready(function() { loadData(); });
+</script>
+</body>
+</html>
